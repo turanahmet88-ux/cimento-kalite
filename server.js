@@ -16,15 +16,19 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Gecici veri depolama (Veritabanı baglantısı olmadıgı durumlarda da canlı calısması ıcın)
-const veriler = [];
+let veriler = [];
 
 io.on('connection', (socket) => {
-  socket.emit('eski_veriler', veriler);
+  socket.emit('guncel_veriler', veriler);
 
   socket.on('yeni_veri', (data) => {
     veriler.unshift(data);
-    io.emit('yeni_veri_eklendi', data);
+    io.emit('guncel_veriler', veriler);
+  });
+
+  socket.on('veri_sil', (id) => {
+    veriler = veriler.filter(item => item.id !== id);
+    io.emit('guncel_veriler', veriler);
   });
 });
 
