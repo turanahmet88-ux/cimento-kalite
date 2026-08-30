@@ -3,99 +3,204 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Çimento Kalite Kontrol Takip Paneli</title>
+  <title>Çimento Kalite Kontrol Paneli</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f6f9; }
-    h1 { color: #333; }
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f6f9; color: #333; }
+    h1 { margin-bottom: 20px; }
     .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    label { font-weight: bold; }
-    input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-    button { grid-column: span 2; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+    .field-group { display: flex; flex-direction: column; }
+    label { font-weight: bold; margin-bottom: 5px; font-size: 13px; }
+    input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    .section-title { font-size: 15px; font-weight: bold; color: #007bff; grid-column: 1 / -1; margin-top: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    button { grid-column: 1 / -1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
     button:hover { background: #218838; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-    th { background-color: #007bff; color: white; }
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+    th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: center; }
+    th { background-color: #007bff; color: white; white-space: nowrap; }
     tr:nth-child(even) { background-color: #f9f9f9; }
+    .badge { padding: 3px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 11px; }
+    .badge-fizik { background-color: #17a2b8; }
+    .badge-kimya { background-color: #6c757d; }
+    .badge-beton { background-color: #fd7e14; }
   </style>
 </head>
 <body>
+
   <h1>Çimento Kalite Kontrol Paneli</h1>
-  
+
+  <!-- VERİ GİRİŞ FORMU -->
   <div class="card">
-    <h2>Fiziksel & Beton Test Verisi Girişi</h2>
+    <h2>Yeni Test Verisi Girişi</h2>
     <form id="testForm">
-      <div>
-        <label for="numuneAdi">Numune Adı / Kodu:</label><br>
-        <input type="text" id="numuneAdi" required>
+      <div class="form-grid">
+        
+        <div class="field-group">
+          <label for="kategori">Test Kategorisi:</label>
+          <select id="kategori" required onchange="kategoriDegisti()">
+            <option value="Fiziksel">Fiziksel Testler</option>
+            <option value="Kimyasal">Kimyasal Analizler</option>
+            <option value="Beton">Beton Dayanım Testleri</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="numuneAdi">Numune Adı / Kodu:</label>
+          <input type="text" id="numuneAdi" placeholder="Örn: CEM I 42.5R - N01" required>
+        </div>
+
+        <!-- FİZİKSEL TEST ALANLARI -->
+        <div class="section-title kat-fizik">Fiziksel Parametreler</div>
+        <div class="field-group kat-fizik">
+          <label for="blaine">Blaine (cm²/g):</label>
+          <input type="number" id="blaine">
+        </div>
+        <div class="field-group kat-fizik">
+          <label for="prizBaslangic">Priz Başlangıç (dk):</label>
+          <input type="number" id="prizBaslangic">
+        </div>
+        <div class="field-group kat-fizik">
+          <label for="prizBitis">Priz Bitiş (dk):</label>
+          <input type="number" id="prizBitis">
+        </div>
+        <div class="field-group kat-fizik">
+          <label for="genlesme">Hacim Sabitliği / Genleşme (mm):</label>
+          <input type="number" step="0.1" id="genlesme">
+        </div>
+
+        <!-- KİMYASAL TEST ALANLARI -->
+        <div class="section-title kat-kimya" style="display:none;">Kimyasal Parametreler (%)</div>
+        <div class="field-group kat-kimya" style="display:none;">
+          <label for="so3">SO₃ (%):</label>
+          <input type="number" step="0.01" id="so3">
+        </div>
+        <div class="field-group kat-kimya" style="display:none;">
+          <label for="cl">Klor (Cl⁻) (%):</label>
+          <input type="number" step="0.001" id="cl">
+        </div>
+        <div class="field-group kat-kimya" style="display:none;">
+          <label for="kk">Kızdırma Kaybı (KK) (%):</label>
+          <input type="number" step="0.01" id="kk">
+        </div>
+        <div class="field-group kat-kimya" style="display:none;">
+          <label for="c3s">C₃S (%):</label>
+          <input type="number" step="0.1" id="c3s">
+        </div>
+
+        <!-- BETON DAYANIM ALANLARI -->
+        <div class="section-title kat-beton" style="display:none;">Basınç Dayanımları (MPa)</div>
+        <div class="field-group kat-beton" style="display:none;">
+          <label for="dayanim1">1 Günlük Dayanım (MPa):</label>
+          <input type="number" step="0.1" id="dayanim1">
+        </div>
+        <div class="field-group kat-beton" style="display:none;">
+          <label for="dayanim2">2 Günlük Dayanım (MPa):</label>
+          <input type="number" step="0.1" id="dayanim2">
+        </div>
+        <div class="field-group kat-beton" style="display:none;">
+          <label for="dayanim7">7 Günlük Dayanım (MPa):</label>
+          <input type="number" step="0.1" id="dayanim7">
+        </div>
+        <div class="field-group kat-beton" style="display:none;">
+          <label for="dayanim28">28 Günlük Dayanım (MPa):</label>
+          <input type="number" step="0.1" id="dayanim28">
+        </div>
+
+        <button type="submit">Veriyi Kaydet ve Gönder</button>
       </div>
-      <div>
-        <label for="blaine">Blaine (cm²/g):</label><br>
-        <input type="number" id="blaine" required>
-      </div>
-      <div>
-        <label for="prizBaslangic">Priz Başlangıç (dk):</label><br>
-        <input type="number" id="prizBaslangic" required>
-      </div>
-      <div>
-        <label for="dayanim2Gun">2 Günlük Dayanım (MPa):</label><br>
-        <input type="number" step="0.1" id="dayanim2Gun" required>
-      </div>
-      <button type="submit">Veriyi Kaydet ve Gönder</button>
     </form>
   </div>
 
+  <!-- CANLI VERİ TABLOSU -->
   <div class="card">
     <h2>Canlı Veri Listesi</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Numune Adı</th>
-          <th>Blaine (cm²/g)</th>
-          <th>Priz Başlangıç (dk)</th>
-          <th>2 Günlük Dayanım (MPa)</th>
-        </tr>
-      </thead>
-      <tbody id="veriTablosu"></tbody>
-    </table>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Kategori</th>
+            <th>Numune Kodu</th>
+            <th>Blaine</th>
+            <th>Priz Bşl. / Bit.</th>
+            <th>Genleşme</th>
+            <th>SO₃ (%)</th>
+            <th>Cl⁻ (%)</th>
+            <th>KK (%)</th>
+            <th>1G (MPa)</th>
+            <th>2G (MPa)</th>
+            <th>7G (MPa)</th>
+            <th>28G (MPa)</th>
+          </tr>
+        </thead>
+        <tbody id="veriTablosu"></tbody>
+      </table>
+    </div>
   </div>
 
   <script>
     const socket = io();
-    const form = document.getElementById('testForm');
-    const tbody = document.getElementById('veriTablosu');
 
-    function tabloyaEkle(data) {
+    function kategoriDegisti() {
+      const kat = document.getElementById('kategori').value;
+      
+      document.querySelectorAll('.kat-fizik').forEach(el => el.style.display = kat === 'Fiziksel' ? 'flex' : 'none');
+      document.querySelectorAll('.kat-kimya').forEach(el => el.style.display = kat === 'Kimyasal' ? 'flex' : 'none');
+      document.querySelectorAll('.kat-beton').forEach(el => el.style.display = kat === 'Beton' ? 'flex' : 'none');
+    }
+
+    function tabloyaEkle(d) {
+      const tbody = document.getElementById('veriTablosu');
       const tr = document.createElement('tr');
+      
+      let badgeClass = 'badge-fizik';
+      if (d.kategori === 'Kimyasal') badgeClass = 'badge-kimya';
+      if (d.kategori === 'Beton') badgeClass = 'badge-beton';
+
       tr.innerHTML = `
-        <td>${data.numuneAdi}</td>
-        <td>${data.blaine}</td>
-        <td>${data.prizBaslangic}</td>
-        <td>${data.dayanim2Gun}</td>
+        <td><span class="badge ${badgeClass}">${d.kategori || '-'}</span></td>
+        <td><b>${d.numuneAdi || '-'}</b></td>
+        <td>${d.blaine || '-'}</td>
+        <td>${d.prizBaslangic || '-' } / ${d.prizBitis || '-'}</td>
+        <td>${d.genlesme || '-'}</td>
+        <td>${d.so3 || '-'}</td>
+        <td>${d.cl || '-'}</td>
+        <td>${d.kk || '-'}</td>
+        <td>${d.dayanim1 || '-'}</td>
+        <td>${d.dayanim2 || '-'}</td>
+        <td>${d.dayanim7 || '-'}</td>
+        <td>${d.dayanim28 || '-'}</td>
       `;
       tbody.prepend(tr);
     }
 
-    form.addEventListener('submit', (e) => {
+    document.getElementById('testForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const data = {
+        kategori: document.getElementById('kategori').value,
         numuneAdi: document.getElementById('numuneAdi').value,
         blaine: document.getElementById('blaine').value,
         prizBaslangic: document.getElementById('prizBaslangic').value,
-        dayanim2Gun: document.getElementById('dayanim2Gun').value
+        prizBitis: document.getElementById('prizBitis').value,
+        genlesme: document.getElementById('genlesme').value,
+        so3: document.getElementById('so3').value,
+        cl: document.getElementById('cl').value,
+        kk: document.getElementById('kk').value,
+        dayanim1: document.getElementById('dayanim1').value,
+        dayanim2: document.getElementById('dayanim2').value,
+        dayanim7: document.getElementById('dayanim7').value,
+        dayanim28: document.getElementById('dayanim28').value
       };
-      
+
       socket.emit('yeni_veri', data);
-      form.reset();
+      document.getElementById('testForm').reset();
+      kategoriDegisti();
     });
 
-    socket.on('yeni_veri_eklendi', (data) => {
-      tabloyaEkle(data);
-    });
-
+    socket.on('yeni_veri_eklendi', (data) => tabloyaEkle(data));
     socket.on('eski_veriler', (veriler) => {
-      tbody.innerHTML = '';
+      document.getElementById('veriTablosu').innerHTML = '';
       veriler.forEach(tabloyaEkle);
     });
   </script>
