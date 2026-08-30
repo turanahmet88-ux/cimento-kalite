@@ -14,8 +14,10 @@
     label { font-weight: bold; margin-bottom: 5px; font-size: 13px; }
     input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
     .section-title { font-size: 15px; font-weight: bold; color: #007bff; grid-column: 1 / -1; margin-top: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-    button { grid-column: 1 / -1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
-    button:hover { background: #218838; }
+    button.btn-submit { grid-column: 1 / -1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
+    button.btn-submit:hover { background: #218838; }
+    .btn-delete { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+    .btn-delete:hover { background-color: #c82333; }
     .table-container { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
     th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: center; }
@@ -31,7 +33,6 @@
 
   <h1>Çimento Kalite Kontrol Paneli</h1>
 
-  <!-- VERİ GİRİŞ FORMU -->
   <div class="card">
     <h2>Yeni Test Verisi Girişi</h2>
     <form id="testForm">
@@ -84,10 +85,6 @@
           <label for="kk">Kızdırma Kaybı (KK) (%):</label>
           <input type="number" step="0.01" id="kk">
         </div>
-        <div class="field-group kat-kimya" style="display:none;">
-          <label for="c3s">C₃S (%):</label>
-          <input type="number" step="0.1" id="c3s">
-        </div>
 
         <!-- BETON DAYANIM ALANLARI -->
         <div class="section-title kat-beton" style="display:none;">Basınç Dayanımları (MPa)</div>
@@ -108,12 +105,11 @@
           <input type="number" step="0.1" id="dayanim28">
         </div>
 
-        <button type="submit">Veriyi Kaydet ve Gönder</button>
+        <button type="submit" class="btn-submit">Veriyi Kaydet ve Gönder</button>
       </div>
     </form>
   </div>
 
-  <!-- CANLI VERİ TABLOSU -->
   <div class="card">
     <h2>Canlı Veri Listesi</h2>
     <div class="table-container">
@@ -132,6 +128,7 @@
             <th>2G (MPa)</th>
             <th>7G (MPa)</th>
             <th>28G (MPa)</th>
+            <th>İşlem</th>
           </tr>
         </thead>
         <tbody id="veriTablosu"></tbody>
@@ -144,40 +141,49 @@
 
     function kategoriDegisti() {
       const kat = document.getElementById('kategori').value;
-      
       document.querySelectorAll('.kat-fizik').forEach(el => el.style.display = kat === 'Fiziksel' ? 'flex' : 'none');
       document.querySelectorAll('.kat-kimya').forEach(el => el.style.display = kat === 'Kimyasal' ? 'flex' : 'none');
       document.querySelectorAll('.kat-beton').forEach(el => el.style.display = kat === 'Beton' ? 'flex' : 'none');
     }
 
-    function tabloyaEkle(d) {
-      const tbody = document.getElementById('veriTablosu');
-      const tr = document.createElement('tr');
-      
-      let badgeClass = 'badge-fizik';
-      if (d.kategori === 'Kimyasal') badgeClass = 'badge-kimya';
-      if (d.kategori === 'Beton') badgeClass = 'badge-beton';
+    function veriSil(id) {
+      if (confirm('Bu veriyi silmek istediğinizden emin misiniz?')) {
+        socket.emit('veri_sil', id);
+      }
+    }
 
-      tr.innerHTML = `
-        <td><span class="badge ${badgeClass}">${d.kategori || '-'}</span></td>
-        <td><b>${d.numuneAdi || '-'}</b></td>
-        <td>${d.blaine || '-'}</td>
-        <td>${d.prizBaslangic || '-' } / ${d.prizBitis || '-'}</td>
-        <td>${d.genlesme || '-'}</td>
-        <td>${d.so3 || '-'}</td>
-        <td>${d.cl || '-'}</td>
-        <td>${d.kk || '-'}</td>
-        <td>${d.dayanim1 || '-'}</td>
-        <td>${d.dayanim2 || '-'}</td>
-        <td>${d.dayanim7 || '-'}</td>
-        <td>${d.dayanim28 || '-'}</td>
-      `;
-      tbody.prepend(tr);
+    function tabloyuYenile(veriler) {
+      const tbody = document.getElementById('veriTablosu');
+      tbody.innerHTML = '';
+      veriler.forEach(d => {
+        const tr = document.createElement('tr');
+        let badgeClass = 'badge-fizik';
+        if (d.kategori === 'Kimyasal') badgeClass = 'badge-kimya';
+        if (d.kategori === 'Beton') badgeClass = 'badge-beton';
+
+        tr.innerHTML = `
+          <td><span class="badge ${badgeClass}">${d.kategori || '-'}</span></td>
+          <td><b>${d.numuneAdi || '-'}</b></td>
+          <td>${d.blaine || '-'}</td>
+          <td>${d.prizBaslangic || '-' } / ${d.prizBitis || '-'}</td>
+          <td>${d.genlesme || '-'}</td>
+          <td>${d.so3 || '-'}</td>
+          <td>${d.cl || '-'}</td>
+          <td>${d.kk || '-'}</td>
+          <td>${d.dayanim1 || '-'}</td>
+          <td>${d.dayanim2 || '-'}</td>
+          <td>${d.dayanim7 || '-'}</td>
+          <td>${d.dayanim28 || '-'}</td>
+          <td><button class="btn-delete" onclick="veriSil('${d.id}')">Sil</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
     document.getElementById('testForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const data = {
+        id: Date.now().toString(),
         kategori: document.getElementById('kategori').value,
         numuneAdi: document.getElementById('numuneAdi').value,
         blaine: document.getElementById('blaine').value,
@@ -198,11 +204,7 @@
       kategoriDegisti();
     });
 
-    socket.on('yeni_veri_eklendi', (data) => tabloyaEkle(data));
-    socket.on('eski_veriler', (veriler) => {
-      document.getElementById('veriTablosu').innerHTML = '';
-      veriler.forEach(tabloyaEkle);
-    });
+    socket.on('guncel_veriler', (veriler) => tabloyuYenile(veriler));
   </script>
 </body>
 </html>
