@@ -10,14 +10,22 @@ const io = new Server(server);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Gecici veri depolama (Veritabanı baglantısı olmadıgı durumlarda da canlı calısması ıcın)
+const veriler = [];
+
 io.on('connection', (socket) => {
-  console.log('Yeni istemci bağlandı');
+  socket.emit('eski_veriler', veriler);
+
+  socket.on('yeni_veri', (data) => {
+    veriler.unshift(data);
+    io.emit('yeni_veri_eklendi', data);
+  });
 });
 
 const PORT = process.env.PORT || 10000;
