@@ -1,1 +1,64 @@
-HTML/JS
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Çimento Kalite Kontrol Takip Paneli</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f6f9; }
+    h1 { color: #333; }
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    label { font-weight: bold; }
+    input { padding: 8px; border: 1fr solid #ccc; border-radius: 4px; }
+    button { grid-column: span 2; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    button:hover { background: #218838; }
+  </style>
+</head>
+<body>
+  <h1>Çimento Kalite Kontrol Paneli</h1>
+  
+  <div class="card">
+    <h2>Fiziksel & Beton Test Verisi Girişi</h2>
+    <form id="testForm">
+      <div>
+        <label for="numuneAdi">Numune Adı / Kodu:</label><br>
+        <input type="text" id="numuneAdi" required>
+      </div>
+      <div>
+        <label for="blaine">Blaine (cm²/g):</label><br>
+        <input type="number" id="blaine" required>
+      </div>
+      <div>
+        <label for="prizBaslangic">Priz Başlangıç (dk):</label><br>
+        <input type="number" id="prizBaslangic" required>
+      </div>
+      <div>
+        <label for="dayanim2Gun">2 Günlük Dayanım (MPa):</label><br>
+        <input type="number" step="0.1" id="dayanim2Gun" required>
+      </div>
+      <button type="submit">Veriyi Kaydet ve Gönder</button>
+    </form>
+  </div>
+
+  <script>
+    const socket = io();
+    const form = document.getElementById('testForm');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = {
+        numuneAdi: document.getElementById('numuneAdi').value,
+        blaine: document.getElementById('blaine').value,
+        prizBaslangic: document.getElementById('prizBaslangic').value,
+        dayanim2Gun: document.getElementById('dayanim2Gun').value
+      };
+      
+      socket.emit('yeni_veri', data);
+      alert('Veri canlı sisteme iletildi!');
+      form.reset();
+    });
+  </script>
+</body>
+</html>
